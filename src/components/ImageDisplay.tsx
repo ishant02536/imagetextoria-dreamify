@@ -1,15 +1,16 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, AlertCircle } from "lucide-react";
 import { GeneratedImage } from "@/services/imageService";
 
 interface ImageDisplayProps {
   image: GeneratedImage | null;
   isLoading: boolean;
+  error?: string | null;
 }
 
-const ImageDisplay: React.FC<ImageDisplayProps> = ({ image, isLoading }) => {
+const ImageDisplay: React.FC<ImageDisplayProps> = ({ image, isLoading, error }) => {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   
   useEffect(() => {
@@ -27,6 +28,21 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({ image, isLoading }) => {
     link.click();
     document.body.removeChild(link);
   };
+
+  if (error) {
+    return (
+      <div className="min-h-[300px] flex items-center justify-center rounded-lg border-2 border-dashed border-red-200 p-12 mt-8 animate-fade-in">
+        <div className="text-center">
+          <div className="mx-auto w-16 h-16 text-red-500 mb-4">
+            <AlertCircle className="w-full h-full" />
+          </div>
+          <h3 className="text-base font-medium text-red-500">Generation Error</h3>
+          <p className="mt-1 text-sm text-muted-foreground/70">{error}</p>
+          <p className="mt-4 text-sm text-muted-foreground/70">Try adjusting your prompt or settings</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!image && !isLoading) {
     return (

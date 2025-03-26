@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,17 +7,29 @@ import {
   PopoverContent,
   PopoverTrigger 
 } from "@/components/ui/popover";
-import { Settings, Image } from "lucide-react";
+import { Settings, Image, Lightbulb, RefreshCw } from "lucide-react";
+import { imageService } from "@/services/imageService";
 
 interface PromptProps {
   onGenerate: (prompt: string, width: number, height: number) => void;
   isGenerating: boolean;
 }
 
+const PromptSuggestion: React.FC<{ suggestion: string, onClick: () => void }> = ({ suggestion, onClick }) => (
+  <div 
+    className="text-sm p-2 bg-secondary/30 rounded-md hover:bg-secondary/50 cursor-pointer transition-colors mb-2"
+    onClick={onClick}
+  >
+    {suggestion}
+  </div>
+);
+
 const Prompt: React.FC<PromptProps> = ({ onGenerate, isGenerating }) => {
   const [prompt, setPrompt] = useState("");
   const [width, setWidth] = useState(512);
   const [height, setHeight] = useState(512);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -27,11 +38,30 @@ const Prompt: React.FC<PromptProps> = ({ onGenerate, isGenerating }) => {
     }
   }, []);
 
+  useEffect(() => {
+    if (prompt.trim().length > 0) {
+      setSuggestions(imageService.suggestPromptImprovements(prompt));
+    } else {
+      setSuggestions([]);
+    }
+  }, [prompt]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (prompt.trim() && !isGenerating) {
       onGenerate(prompt, width, height);
+      setShowSuggestions(false);
     }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    if (suggestion.startsWith("Try '") && suggestion.includes("'")) {
+      const extractedPrompt = suggestion.substring(5, suggestion.lastIndexOf("'"));
+      setPrompt(extractedPrompt);
+    } else {
+      setPrompt(current => current.trim() + ". " + suggestion);
+    }
+    setShowSuggestions(false);
   };
 
   return (
@@ -46,6 +76,33 @@ const Prompt: React.FC<PromptProps> = ({ onGenerate, isGenerating }) => {
           disabled={isGenerating}
         />
         <div className="absolute bottom-4 right-4 flex items-center gap-2">
+          <Popover open={showSuggestions} onOpenChange={setShowSuggestions}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-full hover:bg-secondary transition-all duration-300"
+                disabled={prompt.trim().length === 0 || isGenerating}
+              >
+                <Lightbulb className="h-5 w-5 text-primary/70" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-4 glass border-0" side="top">
+              <div className="space-y-2">
+                <h3 className="font-medium text-sm text-primary/70">Prompt Suggestions</h3>
+                <div className="max-h-[200px] overflow-y-auto">
+                  {suggestions.map((suggestion, index) => (
+                    <PromptSuggestion
+                      key={index}
+                      suggestion={suggestion}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+          
           <Popover>
             <PopoverTrigger asChild>
               <Button 

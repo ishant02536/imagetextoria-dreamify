@@ -1,10 +1,10 @@
-
 import { GenerateImageParams, GeneratedImage as RunwareGeneratedImage, RunwareService } from "./runwareService";
+import { toast } from "sonner";
 
-// API keys would normally be stored in environment variables or a secure backend
-// For now, we'll use a temporary variable to store the API key
-let apiKey: string | null = null;
-let runwareService: RunwareService | null = null;
+// Default API key
+const DEFAULT_API_KEY = "t7KdDMcUch3MROTBHdDj9gEIl0YqCBJG";
+let apiKey: string = DEFAULT_API_KEY;
+let runwareService: RunwareService | null = new RunwareService(DEFAULT_API_KEY);
 
 // Better categorized placeholder images for fallback
 const placeholderImages = {
@@ -108,8 +108,8 @@ export class ImageService {
 
   async generateImage(params: ImageGenerationParams): Promise<GeneratedImage> {
     try {
-      // If we have an API key and runware service, use it
-      if (runwareService && apiKey) {
+      // Always use Runware service with the default API key
+      if (runwareService) {
         const result = await runwareService.generateImage({
           positivePrompt: params.prompt,
           width: params.width,
@@ -130,7 +130,7 @@ export class ImageService {
       
       // Otherwise, fall back to the placeholder implementation
       console.log("No API key provided, using placeholder images");
-      toast.warning("Using placeholder images. Set a Runware API key for AI-generated images.", {
+      toast.warning("Using placeholder images. Connection to Visora AI service failed.", {
         duration: 5000,
       });
       
@@ -194,5 +194,3 @@ export class ImageService {
 
 // Create a singleton instance
 export const imageService = new ImageService();
-
-import { toast } from "sonner";

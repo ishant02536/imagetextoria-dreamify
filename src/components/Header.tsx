@@ -24,7 +24,7 @@ const Header: React.FC = () => {
             </div>
           </div>
           <div className="ml-3">
-            <h1 className="text-xl font-medium tracking-tight">Imagify</h1>
+            <h1 className="text-xl font-medium tracking-tight">Visora AI</h1>
             <p className="text-sm text-muted-foreground">
               Transform text into beautiful imagery
             </p>

@@ -1,4 +1,5 @@
-import { GenerateImageParams, GeneratedImage, RunwareService } from "./runwareService";
+
+import { GenerateImageParams, GeneratedImage as RunwareGeneratedImage, RunwareService } from "./runwareService";
 
 // API keys would normally be stored in environment variables or a secure backend
 // For now, we'll use a temporary variable to store the API key
@@ -82,6 +83,17 @@ export interface ImageGenerationParams {
   seed?: number;
 }
 
+// Export the GeneratedImage interface so it can be used by other components
+export interface GeneratedImage {
+  id: string;
+  url: string;
+  prompt: string;
+  timestamp: number;
+  width: number;
+  height: number;
+  seed?: number;
+}
+
 // This service would normally make actual API calls to a text-to-image service
 export class ImageService {
   setApiKey(key: string) {
@@ -98,12 +110,22 @@ export class ImageService {
     try {
       // If we have an API key and runware service, use it
       if (runwareService && apiKey) {
-        return await runwareService.generateImage({
+        const result = await runwareService.generateImage({
           positivePrompt: params.prompt,
           width: params.width,
           height: params.height,
           seed: params.seed || null,
         });
+        
+        return {
+          id: result.imageUUID || crypto.randomUUID(),
+          url: result.imageURL,
+          prompt: params.prompt,
+          timestamp: Date.now(),
+          width: params.width || 512,
+          height: params.height || 512,
+          seed: result.seed
+        };
       }
       
       // Otherwise, fall back to the placeholder implementation

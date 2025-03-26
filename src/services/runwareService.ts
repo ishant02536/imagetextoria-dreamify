@@ -19,13 +19,10 @@ export interface GenerateImageParams {
 }
 
 export interface GeneratedImage {
-  id: string;
-  url: string;
-  prompt: string;
-  timestamp: number;
-  width: number;
-  height: number;
+  imageUUID: string;
+  imageURL: string;
   seed?: number;
+  NSFWContent?: boolean;
 }
 
 export class RunwareService {
@@ -135,6 +132,7 @@ export class RunwareService {
     const taskUUID = crypto.randomUUID();
     
     return new Promise((resolve, reject) => {
+      // Define the message object with proper typing
       const message = [{
         taskType: "imageInference",
         taskUUID,
@@ -151,34 +149,30 @@ export class RunwareService {
         positivePrompt: params.positivePrompt,
       }];
 
-      if (!params.seed) {
-        delete message[0].seed;
+      // Create a properly typed message with conditional properties
+      const finalMessage = [...message];
+      
+      // Add seed conditionally
+      if (params.seed) {
+        (finalMessage[0] as any).seed = params.seed;
       }
 
-      if (message[0].model === "runware:100@1") {
-        delete message[0].promptWeighting;
+      // Add promptWeighting conditionally
+      if (params.promptWeighting && (finalMessage[0] as any).model !== "runware:100@1") {
+        (finalMessage[0] as any).promptWeighting = params.promptWeighting;
       }
 
-      console.log("Sending image generation message:", message);
+      console.log("Sending image generation message:", finalMessage);
 
       this.messageCallbacks.set(taskUUID, (data) => {
         if (data.error) {
           reject(new Error(data.errorMessage));
         } else {
-          const generatedImage: GeneratedImage = {
-            id: data.imageUUID,
-            url: data.imageURL,
-            prompt: params.positivePrompt,
-            timestamp: Date.now(),
-            width: params.width || 1024,
-            height: params.height || 1024,
-            seed: data.seed,
-          };
-          resolve(generatedImage);
+          resolve(data);
         }
       });
 
-      this.ws.send(JSON.stringify(message));
+      this.ws.send(JSON.stringify(finalMessage));
     });
   }
 }

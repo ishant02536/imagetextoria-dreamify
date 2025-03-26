@@ -1,25 +1,11 @@
+import { GenerateImageParams, GeneratedImage, RunwareService } from "./runwareService";
 
 // API keys would normally be stored in environment variables or a secure backend
-// For this demo, we'll use a placeholder service that simulates image generation
+// For now, we'll use a temporary variable to store the API key
+let apiKey: string | null = null;
+let runwareService: RunwareService | null = null;
 
-export interface ImageGenerationParams {
-  prompt: string;
-  width?: number;
-  height?: number;
-  style?: string;
-  seed?: number;
-}
-
-export interface GeneratedImage {
-  id: string;
-  url: string;
-  prompt: string;
-  timestamp: number;
-  width: number;
-  height: number;
-}
-
-// Better categorized placeholder images to improve prompt matching
+// Better categorized placeholder images for fallback
 const placeholderImages = {
   nature: [
     "https://images.unsplash.com/photo-1682687982167-d7fb3d33e9b0",
@@ -88,34 +74,73 @@ const matchPromptToCategory = (prompt: string): string => {
   return 'abstract';
 };
 
+export interface ImageGenerationParams {
+  prompt: string;
+  width?: number;
+  height?: number;
+  style?: string;
+  seed?: number;
+}
+
 // This service would normally make actual API calls to a text-to-image service
 export class ImageService {
-  async generateImage(params: ImageGenerationParams): Promise<GeneratedImage> {
-    // Simulate network delay and processing time
-    await delay(2000 + Math.random() * 2000);
-    
-    // Match the prompt to a category
-    const category = matchPromptToCategory(params.prompt);
-    
-    // Get images from the matched category
-    const categoryImages = placeholderImages[category as keyof typeof placeholderImages];
-    
-    // Select a random image from the category
-    const imageIndex = Math.floor(Math.random() * categoryImages.length);
-    const imageUrl = `${categoryImages[imageIndex]}?prompt=${encodeURIComponent(params.prompt)}&category=${category}`;
-    
-    // Create a mock response
-    return {
-      id: crypto.randomUUID(),
-      url: imageUrl,
-      prompt: params.prompt,
-      timestamp: Date.now(),
-      width: params.width || 512,
-      height: params.height || 512
-    };
+  setApiKey(key: string) {
+    apiKey = key;
+    runwareService = new RunwareService(key);
+    return this;
   }
 
-  // New method to suggest better prompts
+  getApiKey() {
+    return apiKey;
+  }
+
+  async generateImage(params: ImageGenerationParams): Promise<GeneratedImage> {
+    try {
+      // If we have an API key and runware service, use it
+      if (runwareService && apiKey) {
+        return await runwareService.generateImage({
+          positivePrompt: params.prompt,
+          width: params.width,
+          height: params.height,
+          seed: params.seed || null,
+        });
+      }
+      
+      // Otherwise, fall back to the placeholder implementation
+      console.log("No API key provided, using placeholder images");
+      toast.warning("Using placeholder images. Set a Runware API key for AI-generated images.", {
+        duration: 5000,
+      });
+      
+      // Simulate network delay and processing time
+      await delay(2000 + Math.random() * 2000);
+      
+      // Match the prompt to a category
+      const category = matchPromptToCategory(params.prompt);
+      
+      // Get images from the matched category
+      const categoryImages = placeholderImages[category as keyof typeof placeholderImages];
+      
+      // Select a random image from the category
+      const imageIndex = Math.floor(Math.random() * categoryImages.length);
+      const imageUrl = `${categoryImages[imageIndex]}?prompt=${encodeURIComponent(params.prompt)}&category=${category}`;
+      
+      // Create a mock response
+      return {
+        id: crypto.randomUUID(),
+        url: imageUrl,
+        prompt: params.prompt,
+        timestamp: Date.now(),
+        width: params.width || 512,
+        height: params.height || 512
+      };
+    } catch (error) {
+      console.error("Error generating image:", error);
+      throw error;
+    }
+  }
+
+  // Suggest better prompts
   suggestPromptImprovements(prompt: string): string[] {
     const baseSuggestions = [
       "Try adding more descriptive adjectives",
@@ -147,3 +172,5 @@ export class ImageService {
 
 // Create a singleton instance
 export const imageService = new ImageService();
+
+import { toast } from "sonner";
